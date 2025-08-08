@@ -1,0 +1,6 @@
+PyQt6>=6.0.0
+speech-recognition>=3.10.0
+pyaudio>=0.2.11
+opencv-python>=4.8.0
+movie-py>=1.0.3
+whisper-openai>=20231117

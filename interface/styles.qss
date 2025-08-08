@@ -16,3 +16,10 @@ QMainWindow {
     color: #fff;
     font-size: 16px;
 }
+
+#backButton{
+    border-radius: 10px;
+    background-color: #FF6743;
+    padding: 6px 12px 6px 12px;
+    text-align: center;
+}
