@@ -1,8 +1,11 @@
 import sys
+import os
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QStackedWidget
+from PyQt6.QtWidgets import (QMainWindow, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,
+QWidget, QStackedWidget, QButtonGroup, QRadioButton, QSizePolicy, QFileDialog)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
+
 
 def load_stylesheet(file_path: str) -> str:
     try:
@@ -19,23 +22,97 @@ class AudioWidget(QWidget):
     def __init__(self, main_window):
         super().__init__()
         self.main_window = main_window
+        self.current_file_path = None
+        
+        self.back_button = self.create_back_button()
+        self.label = self.create_audio_label()
+        self.format_buttons = self.create_format_buttons()
         
         layout = QVBoxLayout()
+        layout.addWidget(self.back_button)
+        layout.setAlignment(self.back_button, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.label)
+        layout.setAlignment(self.label, Qt.AlignmentFlag.AlignHCenter)
+        
+        layout.addStretch()
+        
+        radio_layout = QHBoxLayout()
+        radio_layout.addStretch() 
+        
+        for btn in self.format_buttons:
+            radio_layout.addWidget(btn)
+        
+        radio_layout.addStretch()
+        
+        layout.addLayout(radio_layout)
+        
+        # Кнопка загрузки файла
+        upload_button = QPushButton("Загрузить аудиофайл")
+        upload_button.setObjectName("uploadButton")
+        upload_button.clicked.connect(self.upload_file)
+        
+        layout.addWidget(upload_button)
+        layout.setAlignment(upload_button, Qt.AlignmentFlag.AlignHCenter)
+        
+        # Лейбл для отображения названия файла
+        self.file_label = QLabel("Файл не выбран")
+        self.file_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.file_label.setObjectName("fileLabel")
+        layout.addWidget(self.file_label)
+        
+        layout.addStretch()
+        
+        self.setLayout(layout)
+    
+    def create_back_button(self):
+        button = QPushButton()
+        try:
+            button.setIcon(QIcon("interface/images/backArr.svg"))
+        except:
+            button.setText("← Назад")
+        button.setObjectName("backButton")
+        button.clicked.connect(lambda: self.main_window.show_page(0))
+        return button
+    
+    def create_audio_label(self):
         label = QLabel("Интерфейс для работы с аудио")
         label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        return label
+    
+    def create_format_buttons(self):
+        variables = ["Таймкоды", "Без таймкодов", "Субтитры"]
+        buttons = []
         
-        back_button = QPushButton()
-        try:
-            back_button.setIcon(QIcon("interface/images/backArr.svg"))
-        except:
-            back_button.setText("← Назад")
-        back_button.setObjectName("backButton")
-        back_button.clicked.connect(lambda: main_window.show_page(0))
+        self.button_group = QButtonGroup()
         
-        layout.addWidget(back_button)
-        layout.setAlignment(back_button, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(label)
-        self.setLayout(layout)
+        for i, fmt in enumerate(variables):
+            btn = QRadioButton(fmt)
+            if i == 0:
+                btn.setChecked(True)
+            self.button_group.addButton(btn, i)
+            buttons.append(btn)
+        
+        return buttons
+    
+    def upload_file(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Выберите аудиофайл",
+            "",
+            "Audio Files (*.mp3 *.wav *.flac *.aac *.ogg *.m4a *.wma *.aiff);;All Files (*)",
+            options = QFileDialog.Option(0)
+        )
+        if file_path:
+            if not os.access(file_path, os.R_OK) and not (os.path.exists(file_path)):
+                self.file_label.setText("Ошибка доступа!")
+                return
+            audio_formats = ('.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.wma', '.aiff')
+            if not file_path.lower().endswith(audio_formats):
+                self.file_label.setText("Неверный формат файла!")
+                return
+            self.current_file_path = file_path
+            file_name = os.path.basename(file_path)
+            self.file_label.setText(f"Выбран: {file_name}") 
 
 
 class VideoWidget(QWidget):
