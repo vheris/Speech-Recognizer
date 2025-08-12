@@ -15,7 +15,18 @@
    ```
    git clone https://github.com/yourusername/speech-recognizer.git
    ```
-2. Установите зависимости:
+2. Установите FFmpeg:
+   ```bash
+   # macOS
+   brew install ffmpeg
+   
+   # Ubuntu/Debian
+   sudo apt install ffmpeg
+   
+   # Windows - скачать с https://ffmpeg.org
+   ```
+
+3. Установите зависимости Python:
    ```
    pip install -r requirements.txt
    ```
@@ -46,7 +57,18 @@ This application helps you transcribe audio and video to text, as well as create
    ```
    git clone https://github.com/yourusername/speech-recognizer.git
    ```
-2. Install dependencies:
+2. Install FFmpeg:
+   ```bash
+   # macOS
+   brew install ffmpeg
+   
+   # Ubuntu/Debian
+   sudo apt install ffmpeg
+   
+   # Windows - download from https://ffmpeg.org
+   ```
+
+3. Install Python dependencies:
    ```
    pip install -r requirements.txt
    ```

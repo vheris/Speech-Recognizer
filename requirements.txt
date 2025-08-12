@@ -3,4 +3,10 @@ speech-recognition>=3.10.0
 pyaudio>=0.2.11
 opencv-python>=4.8.0
 movie-py>=1.0.3
-whisper-openai>=20231117
+openai-whisper>=20231117
+ffmpeg-python>=0.2.0
+
+# Альтернатива - системная установка FFmpeg:
+# macOS: brew install ffmpeg
+# Ubuntu: sudo apt install ffmpeg
+# Windows: скачать с https://ffmpeg.org

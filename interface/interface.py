@@ -6,6 +6,21 @@ QWidget, QStackedWidget, QButtonGroup, QRadioButton, QSizePolicy, QFileDialog)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 
+# Импорт модулей для аудио и установки ffmpeg
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'core'))
+try:
+    import ffmpeg_setup
+    import audioTrancrip
+    
+    # Проверяем FFmpeg при запуске
+    if not ffmpeg_setup.check_ffmpeg():
+        print("Предупреждение: FFmpeg не найден")
+        
+except ImportError as e:
+    print(f"Ошибка импорта: {e}")
+    audioTrancrip = None
+    ffmpeg_setup = None
+
 
 def load_stylesheet(file_path: str) -> str:
     try:
@@ -39,12 +54,14 @@ class AudioWidget(QWidget):
         radio_layout = QHBoxLayout()
         radio_layout.addStretch() 
         
+        #Добавление кнопок для выбора формата
         for btn in self.format_buttons:
             radio_layout.addWidget(btn)
         
         radio_layout.addStretch()
         
         layout.addLayout(radio_layout)
+        layout.addStretch()
         
         # Кнопка загрузки файла
         upload_button = QPushButton("Загрузить аудиофайл")
@@ -60,11 +77,20 @@ class AudioWidget(QWidget):
         self.file_label.setObjectName("fileLabel")
         layout.addWidget(self.file_label)
         
+        # Кнопка транскрибации
+        transcribe_button = QPushButton("Транскрибировать")
+        transcribe_button.setObjectName("primaryButton")
+        transcribe_button.clicked.connect(self.transcribe_audio)
+        layout.addWidget(transcribe_button)
+        layout.setAlignment(transcribe_button, Qt.AlignmentFlag.AlignHCenter)
+        
         layout.addStretch()
         
         self.setLayout(layout)
     
     def create_back_button(self):
+        #Создание кнопки "назад"
+        
         button = QPushButton()
         try:
             button.setIcon(QIcon("interface/images/backArr.svg"))
@@ -75,11 +101,15 @@ class AudioWidget(QWidget):
         return button
     
     def create_audio_label(self):
-        label = QLabel("Интерфейс для работы с аудио")
+        #Создание лейбла
+        
+        label = QLabel("Выберите необходимую опцию")
         label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         return label
     
     def create_format_buttons(self):
+        #Создание кнопок для выбора формата
+        
         variables = ["Таймкоды", "Без таймкодов", "Субтитры"]
         buttons = []
         
@@ -112,7 +142,47 @@ class AudioWidget(QWidget):
                 return
             self.current_file_path = file_path
             file_name = os.path.basename(file_path)
-            self.file_label.setText(f"Выбран: {file_name}") 
+            self.file_label.setText(f"Выбран: {file_name}")
+    
+    def transcribe_audio(self):
+        if not self.current_file_path:
+            self.file_label.setText("Сначала выберите файл!")
+            return
+        
+        if audioTrancrip is None:
+            self.file_label.setText("Ошибка: модуль транскрибации не найден!")
+            return
+        
+        self.file_label.setText("Обработка...")
+        
+        # Получаем выбранную опцию
+        selected_id = self.button_group.checkedId()
+        
+        try:
+            if selected_id == 0:  # Таймкоды
+                result_file = audioTrancrip.process_with_timestamps(self.current_file_path)
+                if result_file:
+                    self.file_label.setText(f"Создан: {result_file}")
+                else:
+                    self.file_label.setText("Ошибка обработки!")
+            elif selected_id == 1:  # Без таймкодов
+                result_file = audioTrancrip.process_without_timestamps(self.current_file_path)
+                if result_file:
+                    self.file_label.setText(f"Создан: {result_file}")
+                else:
+                    self.file_label.setText("Ошибка обработки!")
+            elif selected_id == 2:  # Субтитры
+                result_file = audioTrancrip.process_as_subtitles(self.current_file_path)
+                if result_file:
+                    self.file_label.setText(f"Создан: {result_file}")
+                else:
+                    self.file_label.setText("Ошибка обработки!")
+        except Exception as e:
+            self.file_label.setText(f"Ошибка: {str(e)}")
+            print(f"Ошибка транскрибации: {e}")
+    
+
+
 
 
 class VideoWidget(QWidget):
