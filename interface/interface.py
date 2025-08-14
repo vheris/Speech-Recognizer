@@ -190,22 +190,147 @@ class VideoWidget(QWidget):
         super().__init__()
         self.main_window = main_window
         
+        self.back_button = self.create_back_button()
+        self.label = self.create_video_label()
+        
         layout = QVBoxLayout()
-        label = QLabel("Интерфейс для работы с видео")
-        label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        layout.addWidget(self.back_button)
+        layout.setAlignment(self.back_button, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.label)
+        layout.setAlignment(self.label, Qt.AlignmentFlag.AlignHCenter)
         
-        back_button = QPushButton()
-        try:
-            back_button.setIcon(QIcon("interface/images/backArr.svg"))
-        except:
-            back_button.setText("← Назад")
-        back_button.setObjectName("backButton")
-        back_button.clicked.connect(lambda: main_window.show_page(0))
+        layout.addStretch()
         
-        layout.addWidget(back_button)
-        layout.setAlignment(back_button, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(label)
+        radio_layout = QHBoxLayout()
+        radio_layout.addStretch() 
+        
+        #Добавление кнопок для выбора формата
+        for btn in self.format_buttons:
+            radio_layout.addWidget(btn)
+        
+        radio_layout.addStretch()
+        
+        layout.addLayout(radio_layout)
+        layout.addStretch()
+        
+        # Кнопка загрузки файла
+        upload_button = QPushButton("Загрузить аудиофайл")
+        upload_button.setObjectName("uploadButton")
+        upload_button.clicked.connect(self.upload_file)
+        
+        layout.addWidget(upload_button)
+        layout.setAlignment(upload_button, Qt.AlignmentFlag.AlignHCenter)
+        
+        # Лейбл для отображения названия файла
+        self.file_label = QLabel("Файл не выбран")
+        self.file_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.file_label.setObjectName("fileLabel")
+        layout.addWidget(self.file_label)
+        
+        # Кнопка транскрибации
+        transcribe_button = QPushButton("Транскрибировать")
+        transcribe_button.setObjectName("primaryButton")
+        transcribe_button.clicked.connect()
+        layout.addWidget(transcribe_button)
+        layout.setAlignment(transcribe_button, Qt.AlignmentFlag.AlignHCenter)
+        
+        layout.addStretch()
+        
+        
         self.setLayout(layout)
+    
+    def create_back_button(self):
+            #Создание кнопки "назад"
+            
+            button = QPushButton()
+            try:
+                button.setIcon(QIcon("interface/images/backArr.svg"))
+            except:
+                button.setText("← Назад")
+            button.setObjectName("backButton")
+            button.clicked.connect(lambda: self.main_window.show_page(0))
+            return button
+        
+    def create_video_label(self):
+        #Создание лейбла
+        
+        label = QLabel("Выберите необходимую опцию")
+        label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        return label
+    
+    def create_buttons_group(self):
+        variables = ["Таймкоды", "Без таймкодов", "Субтитры"]
+        buttons = []
+        
+        self.button_group = QButtonGroup()
+        
+        for i, fmt in enumerate(variables):
+            btn = QRadioButton(fmt)
+            if i == 0:
+                btn.setChecked(True)
+            self.button_group.addButton(btn, i)
+            buttons.append(btn)
+        
+        return buttons
+        
+    def upload_file(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Выберите аудиофайл",
+            "",
+            "Audio Files (*.mp4 *.mkv *.mov *.m4p *.m4v *.wmv);;All Files (*)",
+            options = QFileDialog.Option(0)
+        )
+        if file_path:
+            if not os.access(file_path, os.R_OK) and not (os.path.exists(file_path)):
+                self.file_label.setText("Ошибка доступа!")
+                return
+            audio_formats = ('.mp4', '.mkv', '.mov', '.m4p', '.wmv')
+            if not file_path.lower().endswith(audio_formats):
+                self.file_label.setText("Неверный формат файла!")
+                return
+            self.current_file_path = file_path
+            file_name = os.path.basename(file_path)
+            self.file_label.setText(f"Выбран: {file_name}")
+    
+    def transcribe_audio(self):
+        if not self.current_file_path:
+            self.file_label.setText("Сначала выберите файл!")
+            return
+        
+        if audioTrancrip is None:
+            self.file_label.setText("Ошибка: модуль транскрибации не найден!")
+            return
+        
+        self.file_label.setText("Обработка...")
+        
+        # Получаем выбранную опцию
+        selected_id = self.button_group.checkedId()
+        
+        try:
+            if selected_id == 0:  # Таймкоды
+                result_file = audioTrancrip.process_with_timestamps(self.current_file_path)
+                if result_file:
+                    self.file_label.setText(f"Создан: {result_file}")
+                else:
+                    self.file_label.setText("Ошибка обработки!")
+            elif selected_id == 1:  # Без таймкодов
+                result_file = audioTrancrip.process_without_timestamps(self.current_file_path)
+                if result_file:
+                    self.file_label.setText(f"Создан: {result_file}")
+                else:
+                    self.file_label.setText("Ошибка обработки!")
+            elif selected_id == 2:  # Субтитры
+                result_file = audioTrancrip.process_as_subtitles(self.current_file_path)
+                if result_file:
+                    self.file_label.setText(f"Создан: {result_file}")
+                else:
+                    self.file_label.setText("Ошибка обработки!")
+        except Exception as e:
+            self.file_label.setText(f"Ошибка: {str(e)}")
+            print(f"Ошибка транскрибации: {e}")
+        
+
 
 
 class RealTimeWidget(QWidget):
